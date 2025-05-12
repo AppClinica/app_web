@@ -229,33 +229,35 @@ app.post("/usuario/agregar", (req, res) => {
   }
 
   const consulta = "INSERT INTO usuarios SET ?";
-  conexion.query(consulta, usuario, (error) => {
-    if (error) {
-      if (error.code === "ER_DUP_ENTRY") {
-        if (error.sqlMessage.includes('usuario_dni')) {
-          return res.status(400).json("El DNI ya está registrado.");
-        } else if (error.sqlMessage.includes('usuario_correo')) {
-        // Buscar usuario y enviar correo con la contraseña
-        const buscarUsuario = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
-        conexion.query(buscarUsuario, [usuario.usuario_correo], (err, result) => {
-          if (err || result.length === 0) {
-            return res.status(400).json("El correo ya está registrado.");
+conexion.query(consulta, usuario, (error) => {
+  if (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      if (error.sqlMessage.includes('usuario_dni')) {
+        return res.status(400).json("El DNI ya está registrado.");
+      } else if (error.sqlMessage.includes('usuario_correo')) {
+        // 🔍 Buscar al usuario por correo
+        const query = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
+        conexion.query(query, [usuario.usuario_correo], (err, resultados) => {
+          if (err || resultados.length === 0) {
+            return res.status(400).json("El correo ya está registrado, pero no se pudo enviar el correo.");
           }
-          const nombreCompleto = `${result[0].usuario_nombre} ${result[0].usuario_apellido}`;
-          const contrasena = result[0].usuario_contrasena;
-          enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, contrasena);
-          return res.status(200).json("El correo ya estaba registrado. Hemos reenviado la contraseña a tu correo.");
+          const usuarioExistente = resultados[0];
+          const nombreCompleto = `${usuarioExistente.usuario_nombre} ${usuarioExistente.usuario_apellido}`;
+          enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, usuarioExistente.usuario_contrasena);
+          return res.status(200).json("El correo ya estaba registrado. Se envió la contraseña al correo.");
         });
+        return;
+      } else {
+        return res.status(400).json("Datos duplicados en campos únicos.");
       }
     }
-  return res.status(500).json("Error al registrar usuario.");
-}
+    return res.status(500).json("Error al registrar usuario.");
+  }
 
-    const nombreCompleto = `${usuario.usuario_nombre} ${usuario.usuario_apellido}`;
-    enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
+  const nombreCompleto = `${usuario.usuario_nombre} ${usuario.usuario_apellido}`;
+  enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
 
-    res.json("Usuario registrado correctamente.");
-  });
+  res.json("Usuario registrado correctamente.");
 });
 
 app.put("/usuario/actualizar/:id", (req, res) => {
