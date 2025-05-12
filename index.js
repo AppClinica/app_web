@@ -235,18 +235,7 @@ app.post("/usuario/agregar", (req, res) => {
         if (error.sqlMessage.includes("usuario_dni")) {
           return res.status(400).json({ mensaje: "DNI ya está registrado" });
         } else if (error.sqlMessage.includes("usuario_correo")) {
-          const query = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
-          conexion.query(query, [usuario.usuario_correo], (err, resultados) => {
-            if (!err && resultados.length > 0) {
-              const usuarioExistente = resultados[0];
-              const nombreCompleto = `${usuarioExistente.usuario_nombre} ${usuarioExistente.usuario_apellido}`;
-              enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, usuarioExistente.usuario_contrasena);
-            }
-
-            return res.status(400).json({ mensaje: "El correo ya está registrado." });
-          });
-
-          return;
+          return res.status(400).json({ mensaje: "El correo ya está registrado." });
         }
 
         return res.status(400).json({ mensaje: "Datos duplicados en campos únicos." });
