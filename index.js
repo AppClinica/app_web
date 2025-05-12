@@ -1077,12 +1077,6 @@ app.post("/especialidad/agregar", (req, res) => {
 });
 
 
-app.listen(PUERTO,()=>{
-    console.log("Servidor corriendo en el puerto "+ PUERTO)
-});
-
-
-
 
 
 
