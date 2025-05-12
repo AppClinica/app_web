@@ -56,13 +56,7 @@ function enviarCorreo(destinatario, fecha, hora) {
       <footer style="font-size: 0.9em; color: #888; margin-top: 20px;">
         <p><strong>Clínica Salud Total</strong> – Sistema de Citas</p>
         <p>Este es un mensaje automático, no respondas a este correo.</p>
-      </footer>
-    `,
-    headers: {
-      'X-Mailer': 'Clínica Salud Total - Sistema de Citas',
-      'X-Priority': '3',
-      'X-MSMail-Priority': 'Normal'
-    }
+      </footer>`
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
@@ -89,12 +83,7 @@ function enviarCorreoBienvenida(destinatario, nombre) {
         <p><strong>Clínica Salud Total</strong> – Sistema de Registro</p>
         <p>Este es un mensaje automático, no respondas a este correo.</p>
       </footer>
-    `,
-    headers: {
-      'X-Mailer': 'Clínica Salud Total - Sistema de Registro',
-      'X-Priority': '3',
-      'X-MSMail-Priority': 'Normal'
-    }
+    `
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
@@ -121,12 +110,7 @@ function enviarCorreoRecuperacion(destinatario, nombre, contrasena) {
         <p><strong>Clínica Salud Total</strong> – Sistema Atención al Cliente</p>
         <p>Este es un mensaje automático, no respondas a este correo.</p>
       </footer>
-    `,
-    headers: {
-      'X-Mailer': 'Clínica Salud Total - Recuperación de Contraseña',
-      'X-Priority': '3',
-      'X-MSMail-Priority': 'Normal'
-    }
+    `
   };
 
   return new Promise((resolve, reject) => {
@@ -158,12 +142,7 @@ function enviarCorreoActualizacion(destinatario, fecha, hora) {
         <p><strong>Clínica Salud Total</strong> – Sistema de Citas</p>
         <p>Este es un mensaje automático, no respondas a este correo.</p>
       </footer>
-    `,
-    headers: {
-      'X-Mailer': 'Clínica Salud Total - Sistema de Citas',
-      'X-Priority': '3',
-      'X-MSMail-Priority': 'Normal'
-    }
+    `
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
@@ -253,17 +232,24 @@ app.post("/usuario/agregar", (req, res) => {
   conexion.query(consulta, usuario, (error) => {
     if (error) {
       if (error.code === "ER_DUP_ENTRY") {
-        if (error.sqlMessage.includes('unique_dni')) {
+        if (error.sqlMessage.includes('usuario_dni')) {
           return res.status(400).json("El DNI ya está registrado.");
         } else if (error.sqlMessage.includes('usuario_correo')) {
-          return res.status(400).json("El correo ya está registrado.");
-        } else {
-          return res.status(400).json("Datos duplicados en campos únicos.");
-        }
+        // Buscar usuario y enviar correo con la contraseña
+        const buscarUsuario = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
+        conexion.query(buscarUsuario, [usuario.usuario_correo], (err, result) => {
+          if (err || result.length === 0) {
+            return res.status(400).json("El correo ya está registrado.");
+          }
+          const nombreCompleto = `${result[0].usuario_nombre} ${result[0].usuario_apellido}`;
+          const contrasena = result[0].usuario_contrasena;
+          enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, contrasena);
+          return res.status(200).json("El correo ya estaba registrado. Hemos reenviado la contraseña a tu correo.");
+        });
       }
-
-      return res.status(500).json("Error al registrar usuario.");
     }
+  return res.status(500).json("Error al registrar usuario.");
+}
 
     const nombreCompleto = `${usuario.usuario_nombre} ${usuario.usuario_apellido}`;
     enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
