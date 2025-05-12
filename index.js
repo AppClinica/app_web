@@ -229,12 +229,12 @@ app.post("/usuario/agregar", (req, res) => {
   }
 
   const consulta = "INSERT INTO usuarios SET ?";
-  conexion.query(consulta, usuario, (error) => {
+conexion.query(consulta, usuario, (error) => {
   if (error) {
     if (error.code === "ER_DUP_ENTRY") {
-      if (error.sqlMessage.includes('usuario_dni')) {
+      if (error.sqlMessage.includes("usuario_dni")) {
         return res.status(400).json("El DNI ya está registrado.");
-      } else if (error.sqlMessage.includes('usuario_correo')) {
+      } else if (error.sqlMessage.includes("usuario_correo")) {
         // Buscar usuario por correo y enviar su contraseña
         const query = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
         conexion.query(query, [usuario.usuario_correo], (err, resultados) => {
@@ -251,13 +251,13 @@ app.post("/usuario/agregar", (req, res) => {
         return res.status(400).json("Datos duplicados en campos únicos.");
       }
     }
-    return res.status(500).json("Error al registrar usuario.");
+    return; 
   }
 
   const nombreCompleto = `${usuario.usuario_nombre} ${usuario.usuario_apellido}`;
   enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
 
-  res.json("Usuario registrado correctamente.");
+  return res.json("Usuario registrado correctamente.");
   });
 });
 
@@ -349,7 +349,7 @@ app.post("/usuario/registrar", (req, res) => {
         usuario_dni,
         usuario_contrasena,
         usuario_tipo,
-        id_especialidad // 👈 Recíbelo también desde el frontend
+        id_especialidad 
     } = req.body;
 
     if (!usuario_nombre || !usuario_apellido || !usuario_correo || !usuario_dni || !usuario_contrasena || usuario_tipo === undefined) {
