@@ -243,7 +243,7 @@ app.post("/usuario/agregar", (req, res) => {
               enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, usuarioExistente.usuario_contrasena);
             }
 
-            return res.status(400).json({ mensaje: "El correo ya está registrado. Se ha enviado la contraseña a su correo." });
+            return res.status(400).json({ mensaje: "El correo ya está registrado." });
           });
 
           return;
