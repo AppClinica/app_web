@@ -258,6 +258,7 @@ app.post("/usuario/agregar", (req, res) => {
   enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
 
   res.json("Usuario registrado correctamente.");
+  });
 });
 
 app.put("/usuario/actualizar/:id", (req, res) => {
