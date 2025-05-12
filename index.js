@@ -574,6 +574,30 @@ app.get("/horarios/disponibles/:id_medico/:fecha/:id_especialidad", (req, res) =
   });
 });
 
+app.get("/horarios/registrados/:id_medico/:fecha/:id_especialidad", (req, res) => {
+  const { id_medico, fecha, id_especialidad } = req.params;
+
+  const sql = `
+    SELECT horario_horas 
+    FROM horarios 
+    WHERE id_medico = ? 
+      AND horario_fecha = ? 
+      AND id_especialidad = ?
+      AND horario_estado = 1
+    ORDER BY horario_horas ASC
+  `;
+
+  conexion.query(sql, [id_medico, fecha, id_especialidad], (err, results) => {
+    if (err) {
+      console.error("Error al obtener horarios registrados:", err);
+      return res.status(500).json({ error: "Error interno del servidor" });
+    }
+
+    const horarios = results.map(row => row.horario_horas);
+    res.json({ horarios });
+  });
+});
+
 /*Medicos*/
 
 /*Citas*/
@@ -608,14 +632,13 @@ app.post("/cita/agregar", (req, res) => {
         return res.status(500).json({ error: "Error al registrar la cita" });
       }
 
-      // 👉 Aquí marcamos el horario como ocupado
       const marcarHorario = `
         UPDATE horarios_medicos SET horario_estado = 1 
         WHERE horario_fecha = ? AND horario_hora = ? AND id_medico = ?
       `;
       conexion.query(marcarHorario, [cita_fecha, cita_hora, id_medico], (errUpdate) => {
         if (errUpdate) {
-          console.warn("⚠️ No se pudo marcar el horario como ocupado:", errUpdate.message);
+          console.warn(" No se pudo marcar el horario como ocupado:", errUpdate.message);
         }
       });
 
