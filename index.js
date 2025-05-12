@@ -7,7 +7,7 @@ const mysql = require("mysql2")
 const bodyParser = require("body-parser")
 
 const app = express()
-const PUERTO = 3000
+const PUERTO = process.env.PORT || 3000;
 
 app.use(bodyParser.json())
 
@@ -35,6 +35,10 @@ conexion.connect(error =>{
 app.get("/",(req,res)=>{
     res.send("Bienvenido a mi servicio web")
 })
+
+app.listen(PUERTO,()=>{
+    console.log("Servidor corriendo en el puerto "+ PUERTO)
+});
 
 /*Correos*/
 function enviarCorreo(destinatario, fecha, hora) {
