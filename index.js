@@ -577,23 +577,25 @@ app.get("/horarios/disponibles/:id_medico/:fecha/:id_especialidad", (req, res) =
 app.get("/horarios/registrados/:id_medico/:fecha/:id_especialidad", (req, res) => {
   const { id_medico, fecha, id_especialidad } = req.params;
 
+  console.log("[DEBUG] Obteniendo horarios registrados:", { id_medico, fecha, id_especialidad });
+
   const sql = `
-    SELECT horario_horas 
-    FROM horarios 
+    SELECT horario_hora 
+    FROM horarios_medicos 
     WHERE id_medico = ? 
       AND horario_fecha = ? 
       AND id_especialidad = ?
       AND horario_estado = 1
-    ORDER BY horario_horas ASC
+    ORDER BY horario_hora ASC
   `;
 
   conexion.query(sql, [id_medico, fecha, id_especialidad], (err, results) => {
     if (err) {
-      console.error("Error al obtener horarios registrados:", err);
+      console.error("[ERROR SQL]", err);
       return res.status(500).json({ error: "Error interno del servidor" });
     }
 
-    const horarios = results.map(row => row.horario_horas);
+    const horarios = results.map(row => row.horario_hora);
     res.json({ horarios });
   });
 });
