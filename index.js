@@ -210,22 +210,22 @@ app.post("/usuario/agregar", (req, res) => {
 
   // Validaciones
   if (!usuario.usuario_dni || !/^\d{8}$/.test(usuario.usuario_dni)) {
-    return res.status(400).json("El DNI debe tener exactamente 8 dígitos numéricos.");
+    return res.status(400).json({ mensaje: "El DNI debe tener exactamente 8 dígitos numéricos." });
   }
 
   if (!usuario.usuario_nombre || !usuario.usuario_apellido) {
-    return res.status(400).json("Nombre y apellido son obligatorios.");
+    return res.status(400).json({ mensaje: "Nombre y apellido son obligatorios." });
   }
 
   if (
     !usuario.usuario_correo ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario.usuario_correo)
   ) {
-    return res.status(400).json("Correo electrónico no válido.");
+    return res.status(400).json({ mensaje: "Correo electrónico no válido." });
   }
 
   if (!usuario.usuario_contrasena || usuario.usuario_contrasena.length < 6) {
-    return res.status(400).json("La contraseña debe tener al menos 6 caracteres.");
+    return res.status(400).json({ mensaje: "La contraseña debe tener al menos 6 caracteres." });
   }
 
   const consulta = "INSERT INTO usuarios SET ?";
@@ -233,13 +233,13 @@ app.post("/usuario/agregar", (req, res) => {
     if (error) {
       if (error.code === "ER_DUP_ENTRY") {
         if (error.sqlMessage.includes("usuario_dni")) {
-          return res.status(400).json("El DNI ya está registrado.");
+          return res.status(400).json({ mensaje: "El DNI ya está registrado." });
         } else if (error.sqlMessage.includes("usuario_correo")) {
           // Buscar usuario por correo y enviar su contraseña
           const query = "SELECT usuario_nombre, usuario_apellido, usuario_contrasena FROM usuarios WHERE usuario_correo = ?";
           conexion.query(query, [usuario.usuario_correo], (err, resultados) => {
             if (err || resultados.length === 0) {
-              return res.status(400).json("El correo ya está registrado, pero no se pudo enviar la contraseña.");
+              return res.status(400).json({ mensaje: "El correo ya está registrado, pero no se pudo enviar la contraseña." });
             }
 
             const usuarioExistente = resultados[0];
@@ -247,23 +247,24 @@ app.post("/usuario/agregar", (req, res) => {
             enviarCorreoRecuperacion(usuario.usuario_correo, nombreCompleto, usuarioExistente.usuario_contrasena);
 
             return res.status(409).json({
-              mensaje: "El correo ya está registrado. Se ha enviado la contraseña a su correo."
+              mensaje: "El correo ya está registrado.",
+              extra: "Se ha enviado la contraseña a su correo."
             });
           });
 
-          return; // Evitar continuar fuera del query
+          return;
         } else {
-          return res.status(400).json("Datos duplicados en campos únicos.");
+          return res.status(400).json({ mensaje: "Datos duplicados en campos únicos." });
         }
       }
 
-      return res.status(500).json("Error al registrar usuario.");
+      return res.status(500).json({ mensaje: "Error al registrar usuario." });
     }
 
     const nombreCompleto = `${usuario.usuario_nombre} ${usuario.usuario_apellido}`;
     enviarCorreoBienvenida(usuario.usuario_correo, nombreCompleto);
 
-    return res.json("Usuario registrado correctamente.");
+    return res.json({ mensaje: "Usuario registrado correctamente." });
   });
 });
 
