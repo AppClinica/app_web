@@ -812,6 +812,19 @@ app.get("/citas/por-dia", (req, res) => {
   });
 });
 
+app.put("/cita/estado/:id_cita", (req, res) => {
+  const { id_cita } = req.params;
+  const { nuevo_estado } = req.body;
+
+  const sql = "UPDATE citas SET cita_estado = ? WHERE id_cita = ?";
+  conexion.query(sql, [nuevo_estado, id_cita], (err) => {
+    if (err) {
+      console.error("Error al actualizar estado:", err);
+      return res.status(500).json({ mensaje: "Error al actualizar estado" });
+    }
+    res.json({ mensaje: "Estado actualizado correctamente" });
+  });
+});
 
 app.get("/citas/:usuario", (req, res) => {
   const { usuario } = req.params;
