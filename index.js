@@ -588,7 +588,6 @@ app.get("/horarios/registrados/:id_medico/:fecha/:id_especialidad", (req, res) =
     res.json({ horarios });
   });
 });
-
 /*Medicos*/
 
 /*Citas*/
@@ -738,38 +737,29 @@ app.put("/horario/editar/:id_medico/:fecha/:hora", (req, res) => {
   const { accion, nuevaHora, id_especialidad } = req.body;
 
   if (!accion || !id_especialidad) {
-    return res.status(400).json({ mensaje: "Faltan datos requeridos" });
+    return res.status(400).json({ mensaje: "Datos incompletos" });
   }
 
-  if (accion === "actualizar") {
-    const sql = `
-      UPDATE horarios 
-      SET horario_horas = ? 
-      WHERE id_medico = ? AND horario_fecha = ? AND horario_horas = ? AND id_especialidad = ?
+  if (accion === "eliminar") {
+    const eliminar = `
+      DELETE FROM horarios_medicos 
+      WHERE id_medico = ? AND horario_fecha = ? AND horario_hora = ? AND id_especialidad = ?
     `;
-    conexion.query(sql, [nuevaHora, id_medico, fecha, hora, id_especialidad], (err, result) => {
-      if (err) {
-        console.error("Error al actualizar horario:", err);
-        return res.status(500).json({ mensaje: "Error al actualizar horario" });
-      }
-      res.json({ mensaje: "Horario actualizado correctamente" });
+    conexion.query(eliminar, [id_medico, fecha, hora, id_especialidad], (err) => {
+      if (err) return res.status(500).json({ mensaje: "Error al eliminar horario" });
+      return res.json({ mensaje: "Horario eliminado correctamente" });
     });
-
-  } else if (accion === "eliminar") {
-    const sql = `
-      DELETE FROM horarios 
-      WHERE id_medico = ? AND horario_fecha = ? AND horario_horas = ? AND id_especialidad = ?
+  } else if (accion === "actualizar") {
+    const actualizar = `
+      UPDATE horarios_medicos SET horario_hora = ?
+      WHERE id_medico = ? AND horario_fecha = ? AND horario_hora = ? AND id_especialidad = ?
     `;
-    conexion.query(sql, [id_medico, fecha, hora, id_especialidad], (err, result) => {
-      if (err) {
-        console.error("Error al eliminar horario:", err);
-        return res.status(500).json({ mensaje: "Error al eliminar horario" });
-      }
-      res.json({ mensaje: "Horario eliminado correctamente" });
+    conexion.query(actualizar, [nuevaHora, id_medico, fecha, hora, id_especialidad], (err) => {
+      if (err) return res.status(500).json({ mensaje: "Error al actualizar horario" });
+      return res.json({ mensaje: "Horario actualizado correctamente" });
     });
-
   } else {
-    res.status(400).json({ mensaje: "Acción no válida" });
+    res.status(400).json({ mensaje: "Acción no reconocida" });
   }
 });
 
