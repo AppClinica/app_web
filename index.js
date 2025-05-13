@@ -669,34 +669,34 @@ app.put("/cita/actualizar/:id", (req, res) => {
   const queryCorreo = "SELECT usuario_correo FROM usuarios WHERE id_usuario = ?";
   conexion.query(queryCorreo, [id_usuario], (errCorreo, results) => {
     if (errCorreo || results.length === 0) {
-      console.error("❌ Error al obtener correo:", errCorreo);
+      console.error("Error al obtener correo:", errCorreo);
       return res.status(500).json({ mensaje: "No se pudo obtener el correo del usuario" });
     }
 
     const usuario_correo = results[0].usuario_correo;
 
-    // 🔍 1. Obtener el horario anterior
+    // 1. Obtener el horario anterior
     const queryHorarioAnterior = `
       SELECT cita_fecha, cita_hora FROM citas WHERE id_cita = ?
     `;
     conexion.query(queryHorarioAnterior, [id], (err1, result1) => {
       if (err1) {
-        console.error("❌ Error al obtener el horario anterior:", err1);
+        console.error("Error al obtener el horario anterior:", err1);
         return res.status(500).json({ mensaje: "Error interno al obtener horario anterior" });
       }
 
       const horarioAnterior = result1[0];
 
-      // 🔓 2. Liberar horario anterior
+      // 2. Liberar horario anterior
       const liberar = `
         UPDATE horarios_medicos SET horario_estado = 0 
         WHERE horario_fecha = ? AND horario_hora = ? AND id_medico = ?
       `;
       conexion.query(liberar, [horarioAnterior.cita_fecha, horarioAnterior.cita_hora, id_medico], (err2) => {
-        if (err2) console.warn("⚠️ No se pudo liberar el horario anterior:", err2);
+        if (err2) console.warn("No se pudo liberar el horario anterior:", err2);
       });
 
-      // ✏️ 3. Actualizar la cita
+      // 3. Actualizar la cita
       const sql = `
         UPDATE citas SET 
           id_usuario = ?, 
@@ -708,11 +708,11 @@ app.put("/cita/actualizar/:id", (req, res) => {
       `;
       conexion.query(sql, [id_usuario, id_medico, cita_fecha, cita_hora, cita_estado, id], (err3) => {
         if (err3) {
-          console.error("🛑 Error al actualizar la cita:", err3.sqlMessage);
+          console.error("Error al actualizar la cita:", err3.sqlMessage);
           return res.status(500).json({ mensaje: "Error al actualizar la cita" });
         }
 
-        // 🔒 4. Marcar nuevo horario como ocupado
+        // 4. Marcar nuevo horario como ocupado
         const ocupar = `
           UPDATE horarios_medicos SET horario_estado = 1 
           WHERE horario_fecha = ? AND horario_hora = ? AND id_medico = ?
@@ -723,7 +723,7 @@ app.put("/cita/actualizar/:id", (req, res) => {
           }
         });
 
-        // ✉️ 5. Enviar correo
+        // 5. Enviar correo
         enviarCorreoActualizacion(usuario_correo, cita_fecha, cita_hora);
 
         res.status(200).json({ mensaje: "Cita actualizada correctamente" });
@@ -763,7 +763,7 @@ app.put("/horario/editar/:id_medico/:fecha/:hora", (req, res) => {
   }
 });
 
-app.get("/horarios/:fecha&:id_especialidad", (req, res) => {
+app.get("/horarios/:fecha/:id_especialidad", (req, res) => {
   const { fecha, id_especialidad } = req.params;
   const sql = `
     SELECT * FROM horarios_medicos 
@@ -781,7 +781,7 @@ app.get("/horarios/:fecha&:id_especialidad", (req, res) => {
 });
 
 app.get("/citas/por-dia", (req, res) => {
-  console.log("✅ SE EJECUTÓ EL ENDPOINT /citas/por-dia");
+  console.log("SE EJECUTÓ EL ENDPOINT /citas/por-dia");
 
   const consulta = `
     SELECT 
@@ -795,18 +795,18 @@ app.get("/citas/por-dia", (req, res) => {
 
   conexion.query(consulta, (error, resultados) => {
     if (error) {
-      console.error("❌ ERROR EN CONSULTA:", error.message);
+      console.error("ERROR EN CONSULTA:", error.message);
       return res.status(500).json({ error: "Error en la base de datos" });
     }
 
-    console.log("✅ RESULTADOS:", resultados);
+    console.log("RESULTADOS:", resultados);
 
     const datos = resultados.map(row => ({
       fecha: row.fecha.toISOString().slice(0, 10),
       cantidad: row.cantidad
     }));
 
-    console.log("✅ DATOS FORMATEADOS:", datos);
+    console.log("DATOS FORMATEADOS:", datos);
 
     res.json({ listaCitas: datos });
   });
