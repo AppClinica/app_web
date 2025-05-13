@@ -1099,5 +1099,21 @@ app.post("/especialidad/agregar", (req, res) => {
   });
 });
 
+app.put("/especialidad/actualizar/:id", (req, res) => {
+  const { id } = req.params;
+  const { especialidad_nombre } = req.body;
 
+  if (!especialidad_nombre) {
+    return res.status(400).json({ mensaje: "Nombre requerido" });
+  }
+
+  const sql = "UPDATE especialidades SET especialidad_nombre = ? WHERE id_especialidad = ?";
+  conexion.query(sql, [especialidad_nombre, id], (err) => {
+    if (err) {
+      console.error("Error al actualizar especialidad:", err.message);
+      return res.status(500).json({ error: "Error al actualizar especialidad" });
+    }
+    res.json({ mensaje: "Especialidad actualizada correctamente" });
+  });
+});
 
