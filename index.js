@@ -574,7 +574,7 @@ app.get("/horarios/registrados/:id_medico/:fecha/:id_especialidad", (req, res) =
     WHERE id_medico = ? 
       AND horario_fecha = ? 
       AND id_especialidad = ?
-      AND horario_estado = 1
+      AND horario_estado = 0
     ORDER BY horario_hora ASC
   `;
 
@@ -751,7 +751,7 @@ app.put("/horario/editar/:id_medico/:fecha/:hora", (req, res) => {
     });
   } else if (accion === "actualizar") {
     const actualizar = `
-      UPDATE horarios_medicos SET horario_hora = ?
+      UPDATE horarios_medicos SET horario_hora = ?, horario_estado = 0
       WHERE id_medico = ? AND horario_fecha = ? AND horario_hora = ? AND id_especialidad = ?
     `;
     conexion.query(actualizar, [nuevaHora, id_medico, fecha, hora, id_especialidad], (err) => {
