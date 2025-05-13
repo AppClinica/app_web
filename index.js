@@ -494,7 +494,7 @@ app.post("/horario/registrar", (req, res) => {
     return res.status(400).json({ error: "Faltan datos obligatorios" });
   }
   // Establecer siempre el horario como ocupado al registrarse
-  const horario_estado = 1;
+  const horario_estado = 0;
 
   const consulta = `
     INSERT INTO horarios_medicos 
