@@ -437,98 +437,87 @@ app.get("/horarios/:parametro", (req, res) => {
   });
 });
 
-app.put("/horario/actualizar/:id_horario",(req,res)=>{
-    const {id_horario} = req.params
-    const consulta = "UPDATE horarios_medicos SET horario_estado = 1 WHERE id_horario="+id_horario+""
-    conexion.query(consulta,(error,rpta) =>{
-        if(error) return console.error(error.message)
-        res.json("Horario actualizado correctamente")
-    })
-})
+app.put("/horario/actualizar/:id_horario", (req, res) => {
+  const { id_horario } = req.params;
+  const { id_medico, fecha_nueva, hora_nueva, id_especialidad } = req.body;
 
-// En tu archivo de rutas o app.js
-app.put('/citas/:id_cita/reprogramar', (req, res) => {
-  const { id_cita } = req.params;
-  const { nuevoIdHorario } = req.body;
+  if (!id_medico || !fecha_nueva || !hora_nueva || !id_especialidad) {
+    return res.status(400).json({ mensaje: "Datos incompletos para actualizar el horario" });
+  }
 
-  // 1) Buscar la cita activa
-  const sqlBuscarCita = `
-    SELECT id_cita, id_horario, cita_fecha, cita_hora 
-    FROM citas 
-    WHERE id_cita = ? AND cita_estado = 1
+  // 1. Obtener el horario anterior
+  const queryHorarioAnterior = `
+    SELECT horario_fecha, horario_hora 
+    FROM horarios_medicos 
+    WHERE id_horario = ?
   `;
-  conexion.query(sqlBuscarCita, [id_cita], (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error al buscar la cita' });
-    if (resultados.length === 0) {
-      return res.status(404).json({ mensaje: 'Cita no encontrada o no activa' });
+
+  conexion.query(queryHorarioAnterior, [id_horario], (err1, result1) => {
+    if (err1 || result1.length === 0) {
+      console.error("Error al obtener horario anterior:", err1);
+      return res.status(500).json({ mensaje: "Error al obtener el horario original" });
     }
 
-    const cita = resultados[0];
-    const horarioAntiguo = cita.id_horario;
+    const horarioAnterior = result1[0];
 
-    // 2) Liberar el horario antiguo
-    const sqlLiberarAntiguo = `
+    // 2. Liberar horario anterior
+    const liberar = `
       UPDATE horarios_medicos 
       SET horario_estado = 0 
+      WHERE horario_fecha = ? AND horario_hora = ? AND id_medico = ?
+    `;
+    conexion.query(liberar, [horarioAnterior.horario_fecha, horarioAnterior.horario_hora, id_medico], (err2) => {
+      if (err2) console.warn("No se pudo liberar el horario anterior:", err2);
+    });
+
+    // 3. Actualizar con nuevo horario
+    const actualizar = `
+      UPDATE horarios_medicos 
+      SET horario_fecha = ?, horario_hora = ?, horario_estado = 1, id_especialidad = ?
       WHERE id_horario = ?
     `;
-    conexion.query(sqlLiberarAntiguo, [horarioAntiguo], (err2) => {
-      if (err2) return res.status(500).json({ error: 'Error al liberar el horario antiguo' });
+    conexion.query(actualizar, [fecha_nueva, hora_nueva, id_especialidad, id_horario], (err3) => {
+      if (err3) {
+        console.error("Error al actualizar el horario:", err3.sqlMessage);
+        return res.status(500).json({ mensaje: "Error al actualizar el horario" });
+      }
 
-      // 3) Marcar el nuevo horario como ocupado
-      const sqlOcuparNuevo = `
-        UPDATE horarios_medicos 
-        SET horario_estado = 1 
-        WHERE id_horario = ?
-      `;
-      conexion.query(sqlOcuparNuevo, [nuevoIdHorario], (err3) => {
-        if (err3) return res.status(500).json({ error: 'Error al ocupar el nuevo horario' });
-
-        // 4) Actualizar la cita para apuntar al nuevo horario
-        const sqlActualizarCita = `
-          UPDATE citas 
-          SET id_horario = ?, 
-              cita_fecha = (SELECT horario_fecha FROM horarios_medicos WHERE id_horario = ?),
-              cita_hora  = (SELECT horario_hora  FROM horarios_medicos WHERE id_horario = ?)
-          WHERE id_cita = ?
-        `;
-        conexion.query(
-          sqlActualizarCita,
-          [nuevoIdHorario, nuevoIdHorario, nuevoIdHorario, id_cita],
-          (err4) => {
-            if (err4) return res.status(500).json({ error: 'Error al reprogramar la cita' });
-            return res.json({ mensaje: 'Cita reprogramada exitosamente' });
-          }
-        );
-      });
+      res.json({ mensaje: "Horario actualizado correctamente" });
     });
   });
 });
 
 app.post("/horario/registrar", (req, res) => {
-  const { id_medico, horario_horas, horario_fecha, horario_estado, id_especialidad } = req.body;
+  const { id_medico, horario_horas, horario_fecha, id_especialidad } = req.body;
 
-  if (!id_medico || !horario_horas || !horario_fecha || typeof horario_estado === 'undefined' || !id_especialidad) {
+  if (!id_medico || !horario_horas || !horario_fecha || !id_especialidad) {
     return res.status(400).json({ error: "Faltan datos obligatorios" });
   }
+  // Establecer siempre el horario como ocupado al registrarse
+  const horario_estado = 1;
 
   const consulta = `
-    INSERT INTO horarios_medicos (id_medico, horario_hora, horario_fecha, horario_estado, id_especialidad)
+    INSERT INTO horarios_medicos 
+      (id_medico, horario_hora, horario_fecha, horario_estado, id_especialidad)
     VALUES (?, ?, ?, ?, ?)
   `;
 
-  conexion.query(consulta, [id_medico, horario_horas, horario_fecha, horario_estado, id_especialidad], (error, resultado) => {
-    if (error) {
-      if (error.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "Ese horario ya fue registrado para este médico." });
+  conexion.query(
+    consulta,
+    [id_medico, horario_horas, horario_fecha, horario_estado, id_especialidad],
+    (error, resultado) => {
+      if (error) {
+        if (error.code === "ER_DUP_ENTRY") {
+          return res.status(400).json({ error: "Ese horario ya fue registrado para este médico." });
+        }
+
+        console.error("Error al registrar horario:", error.message);
+        return res.status(500).json({ error: "Error interno al registrar el horario" });
       }
 
-      console.error("Error al insertar horario:", error.message);
-      return res.status(500).json({ error: "Error al registrar horario" });
+      res.json({ mensaje: "Horario registrado correctamente", id_horario: resultado.insertId });
     }
-
-    res.json({ mensaje: "Horario registrado correctamente", id_horario: resultado.insertId });
-  });
+  );
 });
 
 app.get("/medico/:id_medico/especialidades", (req, res) => {
@@ -1119,8 +1108,6 @@ app.post("/especialidad/agregar", (req, res) => {
     res.status(201).json("Especialidad registrada");
   });
 });
-
-
 
 
 
