@@ -359,6 +359,15 @@ app.post("/usuario/registrar", (req, res) => {
 
     conexion.query(query, nuevoUsuario, (error, resultados) => {
         if (error) {
+            if (error.code === "ER_DUP_ENTRY") {
+                if (error.sqlMessage.includes("usuario_dni")) {
+                    return res.status(400).json({ mensaje: "DNI ya está registrado" });
+                } else if (error.sqlMessage.includes("usuario_correo")) {
+                    return res.status(400).json({ mensaje: "El correo ya está registrado." });
+                }
+                return res.status(400).json({ mensaje: "Datos duplicados en campos únicos." });
+            }
+
             console.error("Error al registrar usuario:", error);
             return res.status(500).json({ mensaje: "Error al registrar usuario" });
         }
